@@ -9,7 +9,6 @@ class System:
 
     def run(self):
         self.showMenu()
-        self.chooseOption()
         choose = self.chooseOption()
 
         if choose == 1:
@@ -45,9 +44,12 @@ class System:
         try:
             with open("users.json", "r") as file:
                 datas = json.load(file)
-        except FileNotFoundError:
+        except (FileNotFoundError, json.JSONDecodeError):
             with open("users.json", "w") as file:
                 file.write("{}")
+
+            with open("users.json", "r") as file:
+                datas = json.load(file)   
 
         return datas
 
@@ -90,14 +92,54 @@ class System:
 
 
     def forgetPassword(self):
-        pass
+
+        mail = input("Please enter your email: ")
+        
+        if self.isMailExist(mail):
+            with open("activation.txt", "w") as file:
+                activation = str(randint(10000, 99999))
+                file.write(activation)
+
+            actCodeInput = input("Please enter the activation code sent to your email to reset your password: ")    
+
+            if actCodeInput == activation:
+                while True:
+                    newPassword = input("Please enter your new password: ")
+                    newPasswordAgain = input("Please enter your new password again: ")
+                    if newPassword == newPasswordAgain:
+                        break
+                    else:
+                        print("Passwords do not match. Please try again.")
+            self.datas = self.getData()
+
+            for user in self.datas["users"]:
+                if user["mail"] == mail:
+                    user["password"] = str(newPassword)
+            with open("users.json", "w") as file:
+                json.dump(self.datas, file)
+                print("Your password has been reset successfully!")
+        
+        else:
+            print("There is no user with this email. Please try again.")
+
+        
+
+    def isMailExist (self,mail):
+        self.datas = self.getData()
+        for kullanici in self.datas["users"]:
+            if kullanici["mail"] == mail:
+                return True
+        return False
+
     def exit(self):
-        pass
+        self.status = False
+
+
     def check(self,username,password):
         self.datas = self.getData()
 
         for user in self.datas["users"]:
-            if user["username"] == username and user["password"] == password and user["timeout"] == "" and user["isActive"] == True:
+            if user["username"] == username and user["password"] == password and user["timeout"] == "0" and user["isActive"] == True:
                 return True
         return False
     
@@ -117,6 +159,7 @@ class System:
         self.status = False
 
     def isRegistered(self,username,email):
+        
         self.datas = self.getData()
 
         try:
